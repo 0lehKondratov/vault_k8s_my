@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vault-agent-injector
+  namespace: vault
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vault-agent-injector
+  template:
+    metadata:
+      labels:
+        app: vault-agent-injector
+    spec:
+      serviceAccountName: vault-agent-injector
+      containers:
+      - name: vault-agent-injector
+        image: hashicorp/vault-k8s:latest
+        args:
+        - "injector"
+        env:
+        - name: VAULT_ADDR
+          value: "http://127.0.0.1:8200"
+        - name: KUBERNETES_SERVICE_HOST
+          value: "kubernetes.default.svc"
+        - name: KUBERNETES_SERVICE_PORT
+          value: "443"

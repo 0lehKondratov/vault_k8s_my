@@ -1,0 +1,39 @@
+global:
+  name: consul
+
+server:
+  replicas: 3
+  securityContext:
+    fsGroup: 1000
+  bootstrapExpect: 3
+  storage:
+    enabled: true
+    storageClass: "second-nfs-client"
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+
+ui:
+  enabled: true
+
+connectInject:
+  enabled: false
+
+client:
+  enabled: true
+  replicas: 2
+
+acl:
+  enabled: false
+
+syncCatalog:
+  enabled: false
+
+controller:
+  enabled: false
+
+dns:
+  enabled: true
+  clusterIP: None
