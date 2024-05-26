@@ -7,7 +7,7 @@ metadata:
     app: vault
 spec:
   serviceName: "vault"
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: vault
@@ -16,15 +16,22 @@ spec:
       labels:
         app: vault
     spec:
-      serviceAccountName: vault
+      serviceAccountName: vault  # Ensure this service account exists
+      initContainers:
+      - name: init-config
+        image: busybox
+        command: ["sh", "-c", "cp /mnt/vault-config/vault-config.hcl /vault/config/"]
+        volumeMounts:
+        - name: vault-config-storage
+          mountPath: /mnt/vault-config
+        - name: vault-config
+          mountPath: /vault/config
       containers:
       - name: vault
         image: hashicorp/vault:1.16.2
         ports:
         - containerPort: 8200
           name: vault
-        - containerPort: 8201
-          name: cluster
         volumeMounts:
         - name: vault-config
           mountPath: /vault/config
@@ -38,34 +45,24 @@ spec:
         args:
         - "server"
         - "-config=/vault/config/vault-config.hcl"
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "500m"
-          limits:
-            memory: "512Mi"
-            cpu: "1000m"
-        livenessProbe:
-          httpGet:
-            path: /v1/sys/health
-            port: 8200
-          initialDelaySeconds: 60
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /v1/sys/health
-            port: 8200
-          initialDelaySeconds: 60
-          periodSeconds: 10
         securityContext:
           capabilities:
             add: ["IPC_LOCK"]
+      - name: debug
+        image: busybox
+        command: ["sh", "-c", "sleep 3600"]
+        volumeMounts:
+        - name: vault-storage
+          mountPath: /vault/data
       volumes:
       - name: vault-config
-        configMap:
-          name: vault-config
-      - name: vault-storage
         emptyDir: {}
+      - name: vault-config-storage
+        persistentVolumeClaim:
+          claimName: vault-config-pvc
+      - name: vault-storage
+        persistentVolumeClaim:
+          claimName: vault-pvc
   volumeClaimTemplates:
   - metadata:
       name: vault-storage
